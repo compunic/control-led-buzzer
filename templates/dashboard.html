@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>ESP32 Control Dashboard</title>
+
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        body {
+
+            margin: 0;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            background: #f4f6f8;
+
+            color: #1f2937;
+        }
+
+
+        /* =========================
+           HEADER
+        ========================= */
+
+        .header {
+
+            background: #111827;
+
+            color: white;
+
+            padding: 22px;
+        }
+
+
+        .header h1 {
+
+            margin: 0;
+
+            font-size: 25px;
+        }
+
+
+        .header p {
+
+            margin: 6px 0 0;
+
+            color: #9ca3af;
+        }
+
+
+        /* =========================
+           CONTAINER
+        ========================= */
+
+        .container {
+
+            max-width: 1000px;
+
+            margin: 30px auto;
+
+            padding: 0 20px;
+        }
+
+
+        /* =========================
+           CONNECTION
+        ========================= */
+
+        .connection {
+
+            background: white;
+
+            border-radius: 14px;
+
+            padding: 16px 20px;
+
+            margin-bottom: 20px;
+
+            display: flex;
+
+            justify-content:
+                space-between;
+
+            align-items: center;
+
+            box-shadow:
+                0 3px 12px
+                rgba(0,0,0,.06);
+        }
+
+
+        .connection-status {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 10px;
+        }
+
+
+        .dot {
+
+            width: 12px;
+
+            height: 12px;
+
+            border-radius: 50%;
+
+            background: #22c55e;
+        }
+
+
+        .dot.offline {
+
+            background: #ef4444;
+        }
+
+
+        /* =========================
+           CARDS
+        ========================= */
+
+        .cards {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(2, 1fr);
+
+            gap: 20px;
+        }
+
+
+        .card {
+
+            background: white;
+
+            border-radius: 16px;
+
+            padding: 25px;
+
+            box-shadow:
+                0 3px 15px
+                rgba(0,0,0,.07);
+        }
+
+
+        .icon {
+
+            font-size: 45px;
+
+            margin-bottom: 10px;
+        }
+
+
+        .card h2 {
+
+            margin: 0 0 5px;
+        }
+
+
+        .card p {
+
+            color: #6b7280;
+
+            margin-top: 0;
+        }
+
+
+        /* =========================
+           STATUS
+        ========================= */
+
+        .status {
+
+            font-size: 20px;
+
+            font-weight: bold;
+
+            margin: 20px 0;
+        }
+
+
+        .status.on {
+
+            color: #16a34a;
+        }
+
+
+        .status.off {
+
+            color: #dc2626;
+        }
+
+
+        /* =========================
+           BUTTON
+        ========================= */
+
+        .buttons {
+
+            display: flex;
+
+            gap: 10px;
+        }
+
+
+        button {
+
+            flex: 1;
+
+            border: none;
+
+            padding: 13px;
+
+            border-radius: 10px;
+
+            font-size: 16px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+        }
+
+
+        .btn-on {
+
+            background: #16a34a;
+
+            color: white;
+        }
+
+
+        .btn-off {
+
+            background: #dc2626;
+
+            color: white;
+        }
+
+
+        button:hover {
+
+            opacity: .85;
+        }
+
+
+        button:disabled {
+
+            opacity: .5;
+
+            cursor: not-allowed;
+        }
+
+
+        /* =========================
+           INFORMATION
+        ========================= */
+
+        .info {
+
+            background: white;
+
+            margin-top: 20px;
+
+            padding: 20px;
+
+            border-radius: 14px;
+
+            box-shadow:
+                0 3px 12px
+                rgba(0,0,0,.06);
+        }
+
+
+        .info h3 {
+
+            margin-top: 0;
+        }
+
+
+        .info-row {
+
+            display: flex;
+
+            justify-content:
+                space-between;
+
+            padding: 12px 0;
+
+            border-bottom:
+                1px solid #eee;
+        }
+
+
+        .info-row:last-child {
+
+            border-bottom: none;
+        }
+
+
+        /* =========================
+           RESPONSIVE
+        ========================= */
+
+        @media (max-width: 700px) {
+
+            .cards {
+
+                grid-template-columns: 1fr;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<!-- =================================
+     HEADER
+================================= -->
+
+<div class="header">
+
+    <h1>
+        ESP32 Control Dashboard
+    </h1>
+
+    <p>
+        Kontrol Lampu dan Buzzer
+    </p>
+
+</div>
+
+
+<div class="container">
+
+
+    <!-- =================================
+         CONNECTION
+    ================================= -->
+
+    <div class="connection">
+
+        <div class="connection-status">
+
+            <div
+                id="connectionDot"
+                class="dot">
+            </div>
+
+            <strong
+                id="connectionText">
+                Menghubungkan...
+            </strong>
+
+        </div>
+
+
+        <div id="lastUpdate">
+            -
+        </div>
+
+    </div>
+
+
+    <!-- =================================
+         DEVICE CARDS
+    ================================= -->
+
+    <div class="cards">
+
+
+        <!-- =============================
+             LAMPU
+        ============================== -->
+
+        <div class="card">
+
+            <div class="icon">
+                💡
+            </div>
+
+
+            <h2>
+                Lampu
+            </h2>
+
+
+            <p>
+                ESP32 GPIO 22
+            </p>
+
+
+            <div
+                id="lampuStatus"
+                class="status off">
+
+                OFF
+
+            </div>
+
+
+            <div class="buttons">
+
+                <button
+                    class="btn-on"
+                    onclick="setDevice('lampu', 'on')">
+
+                    ON
+
+                </button>
+
+
+                <button
+                    class="btn-off"
+                    onclick="setDevice('lampu', 'off')">
+
+                    OFF
+
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- =============================
+             BUZZER
+        ============================== -->
+
+        <div class="card">
+
+            <div class="icon">
+                🔔
+            </div>
+
+
+            <h2>
+                Buzzer
+            </h2>
+
+
+            <p>
+                ESP32 GPIO 23
+            </p>
+
+
+            <div
+                id="buzzerStatus"
+                class="status off">
+
+                OFF
+
+            </div>
+
+
+            <div class="buttons">
+
+                <button
+                    class="btn-on"
+                    onclick="setDevice('buzzer', 'on')">
+
+                    ON
+
+                </button>
+
+
+                <button
+                    class="btn-off"
+                    onclick="setDevice('buzzer', 'off')">
+
+                    OFF
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =================================
+         INFORMATION
+    ================================= -->
+
+    <div class="info">
+
+        <h3>
+            Status Sistem
+        </h3>
+
+
+        <div class="info-row">
+
+            <span>
+                Lampu
+            </span>
+
+            <strong id="infoLampu">
+                OFF
+            </strong>
+
+        </div>
+
+
+        <div class="info-row">
+
+            <span>
+                Buzzer
+            </span>
+
+            <strong id="infoBuzzer">
+                OFF
+            </strong>
+
+        </div>
+
+
+        <div class="info-row">
+
+            <span>
+                Server
+            </span>
+
+            <strong>
+                Flask :5000
+            </strong>
+
+        </div>
+
+
+        <div class="info-row">
+
+            <span>
+                Update
+            </span>
+
+            <strong id="updateTime">
+                -
+            </strong>
+
+        </div>
+
+    </div>
+
+
+</div>
+
+
+<script>
+
+
+// =====================================
+// GET STATUS
+// =====================================
+
+async function getStatus() {
+
+    try {
+
+        const response =
+            await fetch(
+                "/status",
+                {
+                    cache: "no-store"
+                }
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "HTTP " +
+                response.status
+            );
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        updateDashboard(data);
+
+
+        // Connection ONLINE
+
+        document
+            .getElementById(
+                "connectionDot"
+            )
+            .classList
+            .remove("offline");
+
+
+        document
+            .getElementById(
+                "connectionText"
+            )
+            .textContent =
+            "Server Terhubung";
+
+
+        const now =
+            new Date()
+            .toLocaleTimeString();
+
+
+        document
+            .getElementById(
+                "lastUpdate"
+            )
+            .textContent =
+            now;
+
+
+        document
+            .getElementById(
+                "updateTime"
+            )
+            .textContent =
+            now;
+
+    }
+
+
+    catch (error) {
+
+        console.error(error);
+
+
+        // Connection OFFLINE
+
+        document
+            .getElementById(
+                "connectionDot"
+            )
+            .classList
+            .add("offline");
+
+
+        document
+            .getElementById(
+                "connectionText"
+            )
+            .textContent =
+            "Server Tidak Terhubung";
+
+    }
+
+}
+
+
+// =====================================
+// UPDATE DASHBOARD
+// =====================================
+
+function updateDashboard(data) {
+
+
+    // ------------------------------
+    // LAMPU
+    // ------------------------------
+
+    const lampu =
+        document.getElementById(
+            "lampuStatus"
+        );
+
+
+    lampu.textContent =
+        data.lampu.toUpperCase();
+
+
+    lampu.className =
+        "status " +
+        data.lampu;
+
+
+    document.getElementById(
+        "infoLampu"
+    ).textContent =
+        data.lampu.toUpperCase();
+
+
+    // ------------------------------
+    // BUZZER
+    // ------------------------------
+
+    const buzzer =
+        document.getElementById(
+            "buzzerStatus"
+        );
+
+
+    buzzer.textContent =
+        data.buzzer.toUpperCase();
+
+
+    buzzer.className =
+        "status " +
+        data.buzzer;
+
+
+    document.getElementById(
+        "infoBuzzer"
+    ).textContent =
+        data.buzzer.toUpperCase();
+
+}
+
+
+// =====================================
+// SET DEVICE
+// =====================================
+
+async function setDevice(
+    device,
+    state
+) {
+
+    try {
+
+        const response =
+            await fetch(
+                "/" +
+                device +
+                "/" +
+                state
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            alert(
+                data.message ||
+                "Gagal mengubah status"
+            );
+
+            return;
+        }
+
+
+        updateDashboard(data);
+
+    }
+
+
+    catch (error) {
+
+        console.error(error);
+
+
+        alert(
+            "Tidak dapat terhubung ke Flask"
+        );
+
+    }
+
+}
+
+
+// =====================================
+// POLLING STATUS
+// =====================================
+
+// Baca status pertama kali
+
+getStatus();
+
+
+// Update setiap 1 detik
+
+setInterval(
+    getStatus,
+    1000
+);
+
+
+</script>
+
+
+</body>
+
+</html>
