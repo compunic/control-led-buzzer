@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Status Lampu</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f2f4f7;
+            color: #222;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            font-size: 20px;
+        }
+
+        .status {
+            font-size: 30px;
+            font-weight: bold;
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .on {
+            background: #d1fae5;
+            color: #047857;
+        }
+
+        .off {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .motion {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .no-motion {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .update {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                margin: 15px auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Dashboard Status Lampu</h1>
+
+    <!-- STATUS GERAKAN -->
+    <div class="card">
+        <h2>Sensor PIR</h2>
+
+        <div id="gerakan" class="status no-motion">
+            Tidak Ada Gerakan
+        </div>
+    </div>
+
+
+    <!-- STATUS LAMPU -->
+    <div class="grid">
+
+        <div class="card">
+            <h2>Lampu 3</h2>
+
+            <div id="lampu3" class="status off">
+                OFF
+            </div>
+        </div>
+
+
+        <div class="card">
+            <h2>Lampu 4</h2>
+
+            <div id="lampu4" class="status off">
+                OFF
+            </div>
+        </div>
+
+    </div>
+
+
+    <div class="update">
+        Update terakhir:
+        <span id="lastUpdate">-</span>
+    </div>
+
+</div>
+
+
+<script>
+
+function updateStatus() {
+
+    fetch("/status")
+        .then(response => {
+
+            if (!response.ok) {
+                throw new Error("Server error");
+            }
+
+            return response.json();
+
+        })
+
+        .then(data => {
+
+            console.log("Data:", data);
+
+            // =====================================
+            // GERAKAN
+            // =====================================
+
+            const gerakan = document.getElementById("gerakan");
+
+            if (data.gerakan === true) {
+
+                gerakan.textContent = "Gerakan Terdeteksi";
+
+                gerakan.className = "status motion";
+
+            } else {
+
+                gerakan.textContent = "Tidak Ada Gerakan";
+
+                gerakan.className = "status no-motion";
+            }
+
+
+            // =====================================
+            // LAMPU 3
+            // =====================================
+
+            const lampu3 = document.getElementById("lampu3");
+
+            if (data.lampu3 === "on") {
+
+                lampu3.textContent = "ON";
+
+                lampu3.className = "status on";
+
+            } else {
+
+                lampu3.textContent = "OFF";
+
+                lampu3.className = "status off";
+            }
+
+
+            // =====================================
+            // LAMPU 4
+            // =====================================
+
+            const lampu4 = document.getElementById("lampu4");
+
+            if (data.lampu4 === "on") {
+
+                lampu4.textContent = "ON";
+
+                lampu4.className = "status on";
+
+            } else {
+
+                lampu4.textContent = "OFF";
+
+                lampu4.className = "status off";
+            }
+
+
+            // =====================================
+            // WAKTU UPDATE
+            // =====================================
+
+            const now = new Date();
+
+            document.getElementById("lastUpdate").textContent =
+                now.toLocaleTimeString("id-ID");
+
+        })
+
+        .catch(error => {
+
+            console.error("Gagal mengambil status:", error);
+
+        });
+}
+
+
+// Update pertama
+updateStatus();
+
+// Update setiap 1 detik
+setInterval(updateStatus, 1000);
+
+</script>
+
+</body>
+</html>
