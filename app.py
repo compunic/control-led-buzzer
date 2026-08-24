@@ -1,109 +1,253 @@
-
 from flask import Flask, jsonify, request, render_template
+
+
 app = Flask(__name__)
-# Status awal
+
 status = {
-    "lampu": "off",
-    "buzzer": "off"
+
+    "gerakan": False,
+
+    "lampu3": "off",
+    "lampu4": "off",
+
+    "mode3": "auto",
+    "mode4": "auto"
 }
-# =========================
-# GET STATUS ESP32
-# =========================
+
+
 @app.route("/status", methods=["GET"])
 def get_status():
-    print(status)
     return jsonify(status)
-# =========================
-# SET LAMPU
-# =========================
-@app.route("/lampu/<state>", methods=["GET"])
-def set_lampu(state):
-    state = state.lower()
 
-    if state not in ["on", "off"]:
-        return jsonify({
-            "success": False,
-            "message": "Status lampu harus on atau off"
-        }), 400
+@app.route("/status", methods=["POST"])
+def update_status():
 
-    status["lampu"] = state
+    data = request.get_json()
 
-    return jsonify({
-        "success": True,
-        "lampu": status["lampu"],
-        "buzzer": status["buzzer"]
-    })
+    if "gerakan" in data:
+        status["gerakan"] = data["gerakan"]
 
+    if "lampu3" in data:
+        status["lampu3"] = data["lampu3"]
 
-# =========================
-# SET BUZZER
-# =========================
-@app.route("/buzzer/<state>", methods=["GET"])
-def set_buzzer(state):
-    state = state.lower()
+    if "lampu4" in data:
+        status["lampu4"] = data["lampu4"]
 
-    if state not in ["on", "off"]:
-        return jsonify({
-            "success": False,
-            "message": "Status buzzer harus on atau off"
-        }), 400
-
-    status["buzzer"] = state
+    print("Status ESP32:", status)
 
     return jsonify({
         "success": True,
-        "lampu": status["lampu"],
-        "buzzer": status["buzzer"]
+        "status": status
     })
 
 
-# =========================
-# SET LAMPU + BUZZER
-# =========================
-@app.route("/set", methods=["GET"])
-def set_status():
-    lampu = request.args.get("lampu")
-    buzzer = request.args.get("buzzer")
 
-    if lampu is not None:
-        lampu = lampu.lower()
 
-        if lampu not in ["on", "off"]:
+# ==========================================
+# CONTROL LAMPU
+# ==========================================
+
+@app.route("/control", methods=["POST"])
+def control():
+
+    try:
+
+        data = request.get_json()
+
+        if not data:
             return jsonify({
                 "success": False,
-                "message": "lampu harus on atau off"
+                "message": "Data JSON tidak ditemukan"
             }), 400
 
-        status["lampu"] = lampu
 
-    if buzzer is not None:
-        buzzer = buzzer.lower()
+        lampu = data.get("lampu")
+        mode = data.get("mode")
+        lamp_status = data.get("status")
 
-        if buzzer not in ["on", "off"]:
+
+        # ======================================
+        # VALIDASI LAMPU
+        # ======================================
+
+        if lampu not in ["lampu3", "lampu4"]:
+
             return jsonify({
                 "success": False,
-                "message": "buzzer harus on atau off"
+                "message": "Lampu tidak valid"
             }), 400
 
-        status["buzzer"] = buzzer
 
-    return jsonify({
-        "success": True,
-        "lampu": status["lampu"],
-        "buzzer": status["buzzer"]
-    })
+        # Tentukan key mode
+        mode_key = "mode3" if lampu == "lampu3" else "mode4"
+
+
+        # ======================================
+        # UBAH MODE
+        # ======================================
+
+        if mode is not None:
+
+            mode = mode.lower()
+
+            if mode not in ["auto", "manual"]:
+
+                return jsonify({
+                    "success": False,
+                    "message": "Mode harus auto atau manual"
+                }), 400
+
+
+            status[mode_key] = mode
+
+
+            # ----------------------------------
+            # Jika AUTO
+            # ----------------------------------
+
+            if mode == "auto":
+
+                return jsonify({
+                    "success": True,
+                    "message": f"{lampu} masuk mode AUTO",
+                    "status": status
+                })
+
+
+        # ======================================
+        # KONTROL MANUAL ON / OFF
+        # ======================================
+
+        if lamp_status is not None:
+
+            lamp_status = lamp_status.lower()
+
+            if lamp_status not in ["on", "off"]:
+
+                return jsonify({
+                    "success": False,
+                    "message": "Status harus on atau off"
+                }), 400
+
+
+            # Pastikan mode MANUAL
+            status[mode_key] = "manual"
+
+
+            # Ubah status lampu
+            status[lampu] = lamp_status
+
+
+        # ======================================
+        # RESPONSE
+        # ======================================
+
+        return jsonify({
+            "success": True,
+            "message": f"Perintah {lampu} berhasil",
+            "status": status
+        })
+
+
+    except Exception as e:
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+
+
+@app.route("/update", methods=["POST"])
+def in_update_status():
+
+    try:
+
+        data = request.get_json()
+
+        if not data:
+
+            return jsonify({
+                "success": False,
+                "message": "Data JSON kosong"
+            }), 400
+
+
+        # Gerakan
+        if "gerakan" in data:
+
+            gerakan = data["gerakan"]
+
+            if isinstance(
+                gerakan,
+                str
+            ):
+
+                gerakan = (
+                    gerakan.lower()
+                    == "true"
+                )
+
+            else:
+
+                gerakan = bool(gerakan)
+
+            status["gerakan"] = gerakan
+
+
+        # Lampu 3
+        if data.get("lampu3") in [
+            "on",
+            "off"
+        ]:
+
+            status["lampu3"] = \
+                data["lampu3"]
+
+
+        # Lampu 4
+        if data.get("lampu4") in [
+            "on",
+            "off"
+        ]:
+
+            status["lampu4"] = \
+                data["lampu4"]
+
+
+        print(
+            "Update dari ESP32:",
+            status
+        )
+
+
+        return jsonify({
+
+            "success": True,
+
+            "message":
+                "Status berhasil diperbarui",
+
+            "status": status
+
+        })
+
+
+    except Exception as e:
+
+        return jsonify({
+
+            "success": False,
+
+            "message": str(e)
+
+        }), 500
+
+
 
 @app.route("/")
-def dashboard():
-    return render_template("dashboard.html")
+def index():
+    return render_template("index.html")
 
-# =========================
-# RUN SERVER
-# =========================
 if __name__ == "__main__":
-    app.run(
-        host="0.0.0.0",
-        port=5000,
-        debug=True
-    )
-
+    app.run(host="0.0.0.0", port=5009)
