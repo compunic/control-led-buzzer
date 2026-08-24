@@ -247,7 +247,7 @@ def in_update_status():
 
 @app.route("/")
 def index():
-    return render_template("dashboard2.html")
+    return render_template("dashboard.html")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5009)
