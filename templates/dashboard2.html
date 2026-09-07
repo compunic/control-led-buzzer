@@ -49,10 +49,6 @@
         .bulb-off {
             color: #cbd5e1;
         }
-        .btn-toggle-group .btn {
-            border-radius: 10px;
-            font-weight: 600;
-        }
     </style>
 </head>
 <body>
@@ -68,7 +64,7 @@
 
     <div class="container">
         
-        <!-- SENSOR GERAKAN (PIR) CARD -->
+        <!-- SENSOR GERAKAN CARD -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card card-custom p-3">
@@ -105,7 +101,7 @@
                     <!-- KONTROL MODE -->
                     <div class="mb-3">
                         <label class="form-label fw-semibold small text-muted">Mode Operasi:</label>
-                        <div class="btn-group w-100 btn-toggle-group" role="group">
+                        <div class="btn-group w-100" role="group">
                             <button type="button" class="btn btn-outline-primary" id="btn-mode3-auto" onclick="setMode('lampu3', 'auto')">Auto</button>
                             <button type="button" class="btn btn-outline-primary" id="btn-mode3-manual" onclick="setMode('lampu3', 'manual')">Manual</button>
                         </div>
@@ -137,7 +133,7 @@
                     <!-- KONTROL MODE -->
                     <div class="mb-3">
                         <label class="form-label fw-semibold small text-muted">Mode Operasi:</label>
-                        <div class="btn-group w-100 btn-toggle-group" role="group">
+                        <div class="btn-group w-100" role="group">
                             <button type="button" class="btn btn-outline-primary" id="btn-mode4-auto" onclick="setMode('lampu4', 'auto')">Auto</button>
                             <button type="button" class="btn btn-outline-primary" id="btn-mode4-manual" onclick="setMode('lampu4', 'manual')">Manual</button>
                         </div>
@@ -159,14 +155,15 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        // Synchronize UI dengan data backend Flask
+        let isFetching = false; // Mencegah bentrok antara polling dan klik user
+
         function fetchStatus() {
+            if (isFetching) return; // Kunci polling jika user baru saja klik tombol
+
             fetch('/status')
                 .then(response => response.json())
-                .then(data => {
-                    updateUI(data);
-                })
-                .catch(err => console.error("Gagal sinkronisasi data:", err));
+                .then(data => updateUI(data))
+                .catch(err => console.error("Error Polling:", err));
         }
 
         function updateUI(data) {
@@ -176,20 +173,18 @@
 
             if (data.gerakan) {
                 txtGerakan.innerText = "Terdeteksi Gerakan!";
-                txtGerakan.classList.add('text-danger');
+                txtGerakan.className = "mb-0 fw-bold text-danger";
                 badgeGerakan.className = "badge badge-status sensor-active";
                 badgeGerakan.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Ada Gerakan';
             } else {
                 txtGerakan.innerText = "Aman / Tidak Ada Gerakan";
-                txtGerakan.classList.remove('text-danger');
+                txtGerakan.className = "mb-0 fw-bold text-dark";
                 badgeGerakan.className = "badge badge-status sensor-inactive";
                 badgeGerakan.innerHTML = '<i class="fa-solid fa-shield me-1"></i> Standby';
             }
 
-            // Update Lampu 3 UI
+            // Update UI Lampu
             updateLampuUI('lampu3', data.lampu3, data.mode3);
-
-            // Update Lampu 4 UI
             updateLampuUI('lampu4', data.lampu4, data.mode4);
         }
 
@@ -197,7 +192,7 @@
             const icon = document.getElementById(`icon-${lampuKey}`);
             const txtStatus = document.getElementById(`txt-status-${lampuKey}`);
             const txtMode = document.getElementById(`txt-mode-${lampuKey}`);
-            const btnAuto = document.getElementById(`btn-mode3-${mode}` ? `btn-mode3-auto` : '');
+            const num = lampuKey.slice(-1);
 
             // Status ON/OFF
             if (status === 'on') {
@@ -214,25 +209,26 @@
             txtMode.innerText = mode.toUpperCase();
             if (mode === 'auto') {
                 txtMode.className = "badge bg-info text-dark";
-                document.getElementById(`btn-mode${lampuKey.slice(-1)}-auto`).classList.add('active');
-                document.getElementById(`btn-mode${lampuKey.slice(-1)}-manual`).classList.remove('active');
+                document.getElementById(`btn-mode${num}-auto`).classList.add('active');
+                document.getElementById(`btn-mode${num}-manual`).classList.remove('active');
                 
-                // Disable saklar manual jika mode AUTO
+                // Disable tombol manual jika AUTO
                 document.getElementById(`btn-${lampuKey}-on`).disabled = true;
                 document.getElementById(`btn-${lampuKey}-off`).disabled = true;
             } else {
                 txtMode.className = "badge bg-warning text-dark";
-                document.getElementById(`btn-mode${lampuKey.slice(-1)}-manual`).classList.add('active');
-                document.getElementById(`btn-mode${lampuKey.slice(-1)}-auto`).classList.remove('active');
+                document.getElementById(`btn-mode${num}-manual`).classList.add('active');
+                document.getElementById(`btn-mode${num}-auto`).classList.remove('active');
                 
-                // Enable saklar manual jika mode MANUAL
+                // Enable tombol manual jika MANUAL
                 document.getElementById(`btn-${lampuKey}-on`).disabled = false;
                 document.getElementById(`btn-${lampuKey}-off`).disabled = false;
             }
         }
 
-        // Kirim permintaan ubah mode
+        // Fungsi mengubah mode (Auto/Manual)
         function setMode(lampu, mode) {
+            isFetching = true; // Kunci polling
             fetch('/control', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -240,12 +236,16 @@
             })
             .then(res => res.json())
             .then(data => {
-                if (data.success) fetchStatus();
+                if (data.success) updateUI(data.status);
+            })
+            .finally(() => {
+                setTimeout(() => { isFetching = false; }, 500); // Lepas kunci setelah 500ms
             });
         }
 
-        // Kirim permintaan ubah status saklar manual
+        // Fungsi mengubah status saklar ON/OFF
         function setStatus(lampu, status) {
+            isFetching = true; // Kunci polling
             fetch('/control', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -253,7 +253,10 @@
             })
             .then(res => res.json())
             .then(data => {
-                if (data.success) fetchStatus();
+                if (data.success) updateUI(data.status);
+            })
+            .finally(() => {
+                setTimeout(() => { isFetching = false; }, 500); // Lepas kunci setelah 500ms
             });
         }
 
