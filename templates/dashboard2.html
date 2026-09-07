@@ -1,805 +1,267 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Dashboard Status Lampu</title>
-
+    <title>Smart Lighting Dashboard</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        * {
-            box-sizing: border-box;
-        }
-
         body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f2f4f7;
-            color: #222;
+            background-color: #f4f6f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-
-        .container {
-            max-width: 800px;
-            margin: 30px auto;
-            padding: 20px;
-        }
-
-        h1 {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
-        }
-
-        .card h2 {
-            margin-top: 0;
-            font-size: 20px;
-        }
-
-        .status {
-            font-size: 28px;
-            font-weight: bold;
-            text-align: center;
-            padding: 18px;
-            border-radius: 10px;
-        }
-
-        .on {
-            background: #d1fae5;
-            color: #047857;
-        }
-
-        .off {
-            background: #fee2e2;
-            color: #b91c1c;
-        }
-
-        .motion {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
-
-        .no-motion {
-            background: #f3f4f6;
-            color: #6b7280;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .control {
-            margin-top: 15px;
-        }
-
-        .mode {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .mode button,
-        .lamp-control button {
+        .card-custom {
             border: none;
-            padding: 12px 18px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 15px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
         }
-
-        .mode button {
-            flex: 1;
-            background: #e5e7eb;
-            color: #374151;
+        .badge-status {
+            font-size: 0.9rem;
+            padding: 0.5em 0.8em;
+            border-radius: 20px;
         }
-
-        .mode button.active {
-            background: #2563eb;
-            color: white;
+        .sensor-active {
+            background-color: #ffebe9;
+            color: #d9381e;
+            animation: pulse 1.5s infinite;
         }
-
-        .lamp-control {
-            display: flex;
-            gap: 10px;
+        .sensor-inactive {
+            background-color: #e2e8f0;
+            color: #64748b;
         }
-
-        .lamp-control button {
-            flex: 1;
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
         }
-
-        .btn-on {
-            background: #16a34a;
-            color: white;
+        .bulb-icon {
+            font-size: 3rem;
+            transition: color 0.3s ease;
         }
-
-        .btn-off {
-            background: #dc2626;
-            color: white;
+        .bulb-on {
+            color: #ffc107;
+            filter: drop-shadow(0 0 10px rgba(255, 193, 7, 0.6));
         }
-
-        button:hover {
-            opacity: 0.85;
+        .bulb-off {
+            color: #cbd5e1;
         }
-
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .mode-status {
-            text-align: center;
-            padding: 10px;
-            border-radius: 8px;
-            margin-top: 10px;
-            background: #f3f4f6;
-            font-weight: bold;
-        }
-
-        .success {
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .error {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .update {
-            text-align: center;
-            color: #666;
-            font-size: 14px;
-            margin-top: 20px;
-        }
-
-        @media (max-width: 600px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
-
-            .container {
-                margin: 10px auto;
-                padding: 12px;
-            }
-
-            .lamp-control {
-                flex-direction: column;
-            }
+        .btn-toggle-group .btn {
+            border-radius: 10px;
+            font-weight: 600;
         }
     </style>
 </head>
-
 <body>
 
-<div class="container">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#"><i class="fa-solid fa-house-signal me-2"></i>IoT Smart Home</a>
+            <span class="navbar-text text-light small">
+                <i class="fa-solid fa-circle text-success me-1"></i> Live Connected
+            </span>
+        </div>
+    </nav>
 
-    <h1>Dashboard Status Lampu</h1>
-
-    <!-- ========================= -->
-    <!-- STATUS SENSOR PIR -->
-    <!-- ========================= -->
-
-    <div class="card">
-
-        <h2>Sensor PIR</h2>
-
-        <div id="gerakan" class="status no-motion">
-            Tidak Ada Gerakan
+    <div class="container">
+        
+        <!-- SENSOR GERAKAN (PIR) CARD -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card card-custom p-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <i class="fa-solid fa-person-walking fa-2x me-3 text-primary"></i>
+                            <div>
+                                <h6 class="mb-0 text-muted">Status Sensor Gerakan (PIR)</h6>
+                                <h4 class="mb-0 fw-bold" id="txt-gerakan">Mengecek...</h4>
+                            </div>
+                        </div>
+                        <span id="badge-gerakan" class="badge badge-status sensor-inactive">
+                            <i class="fa-solid fa-shield"></i> Standby
+                        </span>
+                    </div>
+                </div>
+            </div>
         </div>
 
-    </div>
+        <div class="row g-4">
+            
+            <!-- LAMPU 3 CARD -->
+            <div class="col-md-6">
+                <div class="card card-custom p-4">
+                    <div class="text-center mb-3">
+                        <i id="icon-lampu3" class="fa-solid fa-lightbulb bulb-icon bulb-off mb-2"></i>
+                        <h4 class="fw-bold">Lampu 3</h4>
+                        <p class="text-muted mb-1">Status: <span id="txt-status-lampu3" class="fw-bold">OFF</span></p>
+                        <p class="text-muted small">Mode: <span id="txt-mode-lampu3" class="badge bg-secondary">AUTO</span></p>
+                    </div>
 
+                    <hr>
 
-    <!-- ========================= -->
-    <!-- STATUS LAMPU -->
-    <!-- ========================= -->
+                    <!-- KONTROL MODE -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">Mode Operasi:</label>
+                        <div class="btn-group w-100 btn-toggle-group" role="group">
+                            <button type="button" class="btn btn-outline-primary" id="btn-mode3-auto" onclick="setMode('lampu3', 'auto')">Auto</button>
+                            <button type="button" class="btn btn-outline-primary" id="btn-mode3-manual" onclick="setMode('lampu3', 'manual')">Manual</button>
+                        </div>
+                    </div>
 
-    <div class="grid">
+                    <!-- KONTROL MANUAL -->
+                    <div>
+                        <label class="form-label fw-semibold small text-muted">Saklar Manual:</label>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-success w-50 fw-bold" id="btn-lampu3-on" onclick="setStatus('lampu3', 'on')">ON</button>
+                            <button type="button" class="btn btn-danger w-50 fw-bold" id="btn-lampu3-off" onclick="setStatus('lampu3', 'off')">OFF</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        <div class="card">
+            <!-- LAMPU 4 CARD -->
+            <div class="col-md-6">
+                <div class="card card-custom p-4">
+                    <div class="text-center mb-3">
+                        <i id="icon-lampu4" class="fa-solid fa-lightbulb bulb-icon bulb-off mb-2"></i>
+                        <h4 class="fw-bold">Lampu 4</h4>
+                        <p class="text-muted mb-1">Status: <span id="txt-status-lampu4" class="fw-bold">OFF</span></p>
+                        <p class="text-muted small">Mode: <span id="txt-mode-lampu4" class="badge bg-secondary">AUTO</span></p>
+                    </div>
 
-            <h2>Lampu 3</h2>
+                    <hr>
 
-            <div id="lampu3" class="status off">
-                OFF
+                    <!-- KONTROL MODE -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">Mode Operasi:</label>
+                        <div class="btn-group w-100 btn-toggle-group" role="group">
+                            <button type="button" class="btn btn-outline-primary" id="btn-mode4-auto" onclick="setMode('lampu4', 'auto')">Auto</button>
+                            <button type="button" class="btn btn-outline-primary" id="btn-mode4-manual" onclick="setMode('lampu4', 'manual')">Manual</button>
+                        </div>
+                    </div>
+
+                    <!-- KONTROL MANUAL -->
+                    <div>
+                        <label class="form-label fw-semibold small text-muted">Saklar Manual:</label>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-success w-50 fw-bold" id="btn-lampu4-on" onclick="setStatus('lampu4', 'on')">ON</button>
+                            <button type="button" class="btn btn-danger w-50 fw-bold" id="btn-lampu4-off" onclick="setStatus('lampu4', 'off')">OFF</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
         </div>
-
-
-        <div class="card">
-
-            <h2>Lampu 4</h2>
-
-            <div id="lampu4" class="status off">
-                OFF
-            </div>
-
-        </div>
-
     </div>
 
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // Synchronize UI dengan data backend Flask
+        function fetchStatus() {
+            fetch('/status')
+                .then(response => response.json())
+                .then(data => {
+                    updateUI(data);
+                })
+                .catch(err => console.error("Gagal sinkronisasi data:", err));
+        }
 
-    <!-- ========================= -->
-    <!-- KONTROL LAMPU 3 -->
-    <!-- ========================= -->
+        function updateUI(data) {
+            // Update PIR Sensor Status
+            const txtGerakan = document.getElementById('txt-gerakan');
+            const badgeGerakan = document.getElementById('badge-gerakan');
 
-    <div class="card">
-
-        <h2>Kontrol Lampu 3</h2>
-
-        <div class="mode">
-
-            <button
-                id="auto3"
-                onclick="setMode('lampu3', 'auto')">
-                AUTO
-            </button>
-
-            <button
-                id="manual3"
-                onclick="setMode('lampu3', 'manual')">
-                MANUAL
-            </button>
-
-        </div>
-
-        <div class="lamp-control">
-
-            <button
-                class="btn-on"
-                id="on3"
-                onclick="setLamp('lampu3', 'on')">
-                HIDUPKAN
-            </button>
-
-            <button
-                class="btn-off"
-                id="off3"
-                onclick="setLamp('lampu3', 'off')">
-                MATIKAN
-            </button>
-
-        </div>
-
-        <div id="mode3" class="mode-status">
-            Mode: AUTO
-        </div>
-
-    </div>
-
-
-    <!-- ========================= -->
-    <!-- KONTROL LAMPU 4 -->
-    <!-- ========================= -->
-
-    <div class="card">
-
-        <h2>Kontrol Lampu 4</h2>
-
-        <div class="mode">
-
-            <button
-                id="auto4"
-                onclick="setMode('lampu4', 'auto')">
-                AUTO
-            </button>
-
-            <button
-                id="manual4"
-                onclick="setMode('lampu4', 'manual')">
-                MANUAL
-            </button>
-
-        </div>
-
-        <div class="lamp-control">
-
-            <button
-                class="btn-on"
-                id="on4"
-                onclick="setLamp('lampu4', 'on')">
-                HIDUPKAN
-            </button>
-
-            <button
-                class="btn-off"
-                id="off4"
-                onclick="setLamp('lampu4', 'off')">
-                MATIKAN
-            </button>
-
-        </div>
-
-        <div id="mode4" class="mode-status">
-            Mode: AUTO
-        </div>
-
-    </div>
-
-
-    <!-- ========================= -->
-    <!-- PESAN -->
-    <!-- ========================= -->
-
-    <div id="message" class="mode-status">
-        Siap
-    </div>
-
-
-    <div class="update">
-
-        Update terakhir:
-        <span id="lastUpdate">-</span>
-
-    </div>
-
-</div>
-
-
-<script>
-
-/* =========================================
-   UPDATE STATUS
-========================================= */
-
-function updateStatus() {
-
-    fetch("/status")
-
-        .then(response => {
-
-            if (!response.ok) {
-                throw new Error("Server error");
-            }
-
-            return response.json();
-
-        })
-
-        .then(data => {
-
-            console.log("Data:", data);
-
-
-            /* =================================
-               GERAKAN
-            ================================= */
-
-            const gerakan =
-                document.getElementById("gerakan");
-
-
-            /*
-             * Mendukung:
-             *
-             * true
-             * "true"
-             * 1
-             */
-
-            const motion =
-                data.gerakan === true ||
-                data.gerakan === "true" ||
-                data.gerakan === 1;
-
-
-            if (motion) {
-
-                gerakan.textContent =
-                    "Gerakan Terdeteksi";
-
-                gerakan.className =
-                    "status motion";
-
+            if (data.gerakan) {
+                txtGerakan.innerText = "Terdeteksi Gerakan!";
+                txtGerakan.classList.add('text-danger');
+                badgeGerakan.className = "badge badge-status sensor-active";
+                badgeGerakan.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Ada Gerakan';
             } else {
-
-                gerakan.textContent =
-                    "Tidak Ada Gerakan";
-
-                gerakan.className =
-                    "status no-motion";
+                txtGerakan.innerText = "Aman / Tidak Ada Gerakan";
+                txtGerakan.classList.remove('text-danger');
+                badgeGerakan.className = "badge badge-status sensor-inactive";
+                badgeGerakan.innerHTML = '<i class="fa-solid fa-shield me-1"></i> Standby';
             }
 
+            // Update Lampu 3 UI
+            updateLampuUI('lampu3', data.lampu3, data.mode3);
 
-            /* =================================
-               LAMPU 3
-            ================================= */
-
-            updateLampStatus(
-                "lampu3",
-                data.lampu3
-            );
-
-
-            /* =================================
-               LAMPU 4
-            ================================= */
-
-            updateLampStatus(
-                "lampu4",
-                data.lampu4
-            );
-
-
-            /* =================================
-               MODE LAMPU 3
-            ================================= */
-
-            if (data.mode3) {
-
-                updateModeUI(
-                    "lampu3",
-                    data.mode3
-                );
-
-            }
-
-
-            /* =================================
-               MODE LAMPU 4
-            ================================= */
-
-            if (data.mode4) {
-
-                updateModeUI(
-                    "lampu4",
-                    data.mode4
-                );
-
-            }
-
-
-            /* =================================
-               WAKTU
-            ================================= */
-
-            const now = new Date();
-
-            document.getElementById(
-                "lastUpdate"
-            ).textContent =
-                now.toLocaleTimeString("id-ID");
-
-        })
-
-        .catch(error => {
-
-            console.error(
-                "Gagal mengambil status:",
-                error
-            );
-
-        });
-}
-
-
-/* =========================================
-   UPDATE STATUS LAMPU
-========================================= */
-
-function updateLampStatus(lampu, status) {
-
-    const element =
-        document.getElementById(lampu);
-
-
-    if (status === "on") {
-
-        element.textContent = "ON";
-
-        element.className =
-            "status on";
-
-    } else {
-
-        element.textContent = "OFF";
-
-        element.className =
-            "status off";
-    }
-}
-
-
-/* =========================================
-   SET MODE
-========================================= */
-
-function setMode(lampu, mode) {
-
-    fetch("/control", {
-
-        method: "POST",
-
-        headers: {
-            "Content-Type":
-                "application/json"
-        },
-
-        body: JSON.stringify({
-
-            lampu: lampu,
-
-            mode: mode
-
-        })
-
-    })
-
-    .then(response => {
-
-        if (!response.ok) {
-            throw new Error("Gagal mengubah mode");
+            // Update Lampu 4 UI
+            updateLampuUI('lampu4', data.lampu4, data.mode4);
         }
 
-        return response.json();
+        function updateLampuUI(lampuKey, status, mode) {
+            const icon = document.getElementById(`icon-${lampuKey}`);
+            const txtStatus = document.getElementById(`txt-status-${lampuKey}`);
+            const txtMode = document.getElementById(`txt-mode-${lampuKey}`);
+            const btnAuto = document.getElementById(`btn-mode3-${mode}` ? `btn-mode3-auto` : '');
 
-    })
+            // Status ON/OFF
+            if (status === 'on') {
+                icon.className = "fa-solid fa-lightbulb bulb-icon bulb-on mb-2";
+                txtStatus.innerText = "ON";
+                txtStatus.className = "fw-bold text-success";
+            } else {
+                icon.className = "fa-solid fa-lightbulb bulb-icon bulb-off mb-2";
+                txtStatus.innerText = "OFF";
+                txtStatus.className = "fw-bold text-secondary";
+            }
 
-    .then(data => {
-
-        console.log("Control:", data);
-
-        updateModeUI(lampu, mode);
-
-        showMessage(
-            "Mode " +
-            lampu +
-            " diubah ke " +
-            mode.toUpperCase(),
-            false
-        );
-
-        updateStatus();
-
-    })
-
-    .catch(error => {
-
-        console.error(error);
-
-        showMessage(
-            "Gagal mengubah mode",
-            true
-        );
-
-    });
-}
-
-
-/* =========================================
-   SET LAMPU ON / OFF
-========================================= */
-
-function setLamp(lampu, status) {
-
-    /*
-     * Tombol ON/OFF hanya digunakan
-     * ketika mode MANUAL.
-     */
-
-    fetch("/control", {
-
-        method: "POST",
-
-        headers: {
-            "Content-Type":
-                "application/json"
-        },
-
-        body: JSON.stringify({
-
-            lampu: lampu,
-
-            mode: "manual",
-
-            status: status
-
-        })
-
-    })
-
-    .then(response => {
-
-        if (!response.ok) {
-            throw new Error("Gagal mengontrol lampu");
+            // Mode AUTO/MANUAL
+            txtMode.innerText = mode.toUpperCase();
+            if (mode === 'auto') {
+                txtMode.className = "badge bg-info text-dark";
+                document.getElementById(`btn-mode${lampuKey.slice(-1)}-auto`).classList.add('active');
+                document.getElementById(`btn-mode${lampuKey.slice(-1)}-manual`).classList.remove('active');
+                
+                // Disable saklar manual jika mode AUTO
+                document.getElementById(`btn-${lampuKey}-on`).disabled = true;
+                document.getElementById(`btn-${lampuKey}-off`).disabled = true;
+            } else {
+                txtMode.className = "badge bg-warning text-dark";
+                document.getElementById(`btn-mode${lampuKey.slice(-1)}-manual`).classList.add('active');
+                document.getElementById(`btn-mode${lampuKey.slice(-1)}-auto`).classList.remove('active');
+                
+                // Enable saklar manual jika mode MANUAL
+                document.getElementById(`btn-${lampuKey}-on`).disabled = false;
+                document.getElementById(`btn-${lampuKey}-off`).disabled = false;
+            }
         }
 
-        return response.json();
+        // Kirim permintaan ubah mode
+        function setMode(lampu, mode) {
+            fetch('/control', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lampu: lampu, mode: mode })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) fetchStatus();
+            });
+        }
 
-    })
+        // Kirim permintaan ubah status saklar manual
+        function setStatus(lampu, status) {
+            fetch('/control', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lampu: lampu, status: status })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) fetchStatus();
+            });
+        }
 
-    .then(data => {
+        // Polling setiap 1 detik
+        setInterval(fetchStatus, 1000);
 
-        console.log("Control:", data);
-
-        updateModeUI(
-            lampu,
-            "manual"
-        );
-
-        updateLampStatus(
-            lampu,
-            status
-        );
-
-        showMessage(
-            lampu +
-            " " +
-            status.toUpperCase(),
-            false
-        );
-
-        updateStatus();
-
-    })
-
-    .catch(error => {
-
-        console.error(error);
-
-        showMessage(
-            "Gagal mengontrol lampu",
-            true
-        );
-
-    });
-}
-
-
-/* =========================================
-   UPDATE TAMPILAN MODE
-========================================= */
-
-function updateModeUI(lampu, mode) {
-
-    let nomor;
-
-    if (lampu === "lampu3") {
-
-        nomor = "3";
-
-    } else {
-
-        nomor = "4";
-
-    }
-
-
-    const autoButton =
-        document.getElementById(
-            "auto" + nomor
-        );
-
-    const manualButton =
-        document.getElementById(
-            "manual" + nomor
-        );
-
-    const modeText =
-        document.getElementById(
-            "mode" + nomor
-        );
-
-
-    if (mode === "manual") {
-
-        autoButton.classList.remove(
-            "active"
-        );
-
-        manualButton.classList.add(
-            "active"
-        );
-
-        modeText.textContent =
-            "Mode: MANUAL";
-
-        /*
-         * Tombol ON/OFF aktif
-         */
-
-        document.getElementById(
-            "on" + nomor
-        ).disabled = false;
-
-        document.getElementById(
-            "off" + nomor
-        ).disabled = false;
-
-    } else {
-
-        manualButton.classList.remove(
-            "active"
-        );
-
-        autoButton.classList.add(
-            "active"
-        );
-
-        modeText.textContent =
-            "Mode: AUTO";
-
-        /*
-         * Pada AUTO tombol ON/OFF
-         * dinonaktifkan.
-         */
-
-        document.getElementById(
-            "on" + nomor
-        ).disabled = true;
-
-        document.getElementById(
-            "off" + nomor
-        ).disabled = true;
-    }
-}
-
-
-/* =========================================
-   PESAN
-========================================= */
-
-function showMessage(text, error) {
-
-    const message =
-        document.getElementById(
-            "message"
-        );
-
-    message.textContent = text;
-
-    if (error) {
-
-        message.className =
-            "mode-status error";
-
-    } else {
-
-        message.className =
-            "mode-status success";
-    }
-
-
-    setTimeout(() => {
-
-        message.textContent = "Siap";
-
-        message.className =
-            "mode-status";
-
-    }, 3000);
-}
-
-
-/* =========================================
-   UPDATE PERTAMA
-========================================= */
-
-updateStatus();
-
-
-/* =========================================
-   UPDATE SETIAP 1 DETIK
-========================================= */
-
-setInterval(
-    updateStatus,
-    1000
-);
-
-</script>
-
+        // Load awal
+        fetchStatus();
+    </script>
 </body>
 </html>
-
