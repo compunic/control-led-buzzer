@@ -172,7 +172,7 @@ def in_update_status():
 
 @app.route("/")
 def index():
-    return render_template("dashboard.html")
+    return render_template("dashboard2.html")
 
 
 if __name__ == "__main__":
